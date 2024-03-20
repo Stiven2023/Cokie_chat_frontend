@@ -16,4 +16,17 @@ class ChatDataProvider extends ChangeNotifier {
     _selectedChat = chat;
     notifyListeners();
   }
+
+  void removeChat(String chatId) {
+    _chats.removeWhere((chat) => chat['_id'] == chatId);
+    notifyListeners();
+  }
+
+  void updateChatMessages(String chatId, List<dynamic> messages) {
+    final index = _chats.indexWhere((chat) => chat['_id'] == chatId);
+    if (index != -1) {
+      _chats[index]['messages'] = messages;
+      notifyListeners();
+    }
+  }
 }

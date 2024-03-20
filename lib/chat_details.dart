@@ -55,7 +55,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     socket.on('newMessage', (message) {
       print('Received message from server: $message');
       setState(() {
-        messages.add(jsonDecode(message));
+        messages.add(message);
       });
       _scrollToBottom();
     });
@@ -98,10 +98,25 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
       'chatId': widget.chatId,
     };
 
-    socket.emit('send_message', messageData);
+    final jsonData = jsonEncode(messageData);
 
-    print('Message sent successfully: $message');
-    _messageController.clear();
+    final url = Uri.parse('https://cokie-chat-api.onrender.com/messages');
+    http
+        .post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonData,
+    )
+        .then((response) {
+      if (response.statusCode == 201) {
+        print('Message sent successfully: $message');
+        _messageController.clear();
+      } else {
+        print('Failed to send message. Status code: ${response.statusCode}');
+      }
+    }).catchError((error) {
+      print('Error sending message: $error');
+    });
   }
 
   void _scrollToBottom() {

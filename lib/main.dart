@@ -70,6 +70,17 @@ class HomePage extends StatelessWidget {
             },
             icon: const Icon(Icons.analytics),
           ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreateChatPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.add),
+          ),
         ],
       ),
       body: SafeArea(
@@ -80,10 +91,41 @@ class HomePage extends StatelessWidget {
             String lastMessageContent =
                 messages.isNotEmpty ? messages.last['content'] : 'No messages';
 
+            String avatarUrl = loadedChats[index]['Avatar'] ?? '';
+
             return ListTile(
               title:
                   Text('${loadedChats[index]["participantNames"].join(", ")}'),
               subtitle: Text(lastMessageContent),
+              leading: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.red, width: 2),
+                ),
+                child: ClipOval(
+                  child: avatarUrl.isNotEmpty
+                      ? Image.network(
+                          avatarUrl,
+                          loadingBuilder: (BuildContext context, Widget child,
+                              ImageChunkEvent? loadingProgress) {
+                            if (loadingProgress == null) {
+                              return child; // La imagen se ha cargado correctamente
+                            } else {
+                              return CircularProgressIndicator(); // Muestra un indicador de carga mientras se descarga la imagen
+                            }
+                          },
+                          errorBuilder: (BuildContext context, Object exception,
+                              StackTrace? stackTrace) {
+                            return Icon(Icons
+                                .error); // Muestra un icono de error si ocurre algún problema al cargar la imagen
+                          },
+                        )
+                      : Icon(Icons
+                          .error), // Mostrar un ícono de error si la URL de la imagen está vacía
+                ),
+              ),
               onTap: () {
                 Navigator.push(
                   context,
@@ -94,8 +136,92 @@ class HomePage extends StatelessWidget {
                   ),
                 );
               },
+              trailing: PopupMenuButton(
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    child: Text('Edit'),
+                    value: 'edit',
+                  ),
+                  PopupMenuItem(
+                    child: Text('Delete'),
+                    value: 'delete',
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditChatPage(
+                          chatId: loadedChats[index]["_id"],
+                        ),
+                      ),
+                    );
+                  } else if (value == 'delete') {
+                    _deleteChat(context, loadedChats[index]["_id"]);
+                  }
+                },
+              ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  void _deleteChat(BuildContext context, String chatId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('https://cokie-chat-api.onrender.com/chats/$chatId'),
+      );
+      if (response.statusCode == 200) {
+        Provider.of<ChatDataProvider>(context, listen: false)
+            .removeChat(chatId);
+      } else {
+        throw Exception('Failed to delete chat');
+      }
+    } catch (error) {
+      print('Error deleting chat: $error');
+    }
+  }
+}
+
+class CreateChatPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Create Chat'),
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            // Lógica para crear un nuevo chat
+          },
+          child: Text('Create Chat'),
+        ),
+      ),
+    );
+  }
+}
+
+class EditChatPage extends StatelessWidget {
+  final String chatId;
+
+  const EditChatPage({required this.chatId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Edit Chat'),
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            // Lógica para editar el chat con el ID `chatId`
+          },
+          child: Text('Edit Chat'),
         ),
       ),
     );
